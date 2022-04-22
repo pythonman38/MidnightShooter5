@@ -94,6 +94,16 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable)
+	float GetCrosshairSpreadMultipler() const;
+
+	// Adds or subtracts to or from OverlappedItemCount and updates bShouldTraceForItems
+	void IncrementOverlappedItemCount(int8 Amount);
+
+	FVector GetCameraInterpLocation();
+
+	void GetPickupItem(class AItem* Item);
+
 private:
 	/* Camra boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -221,7 +231,7 @@ private:
 
 	/* The Item we hit last frame */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
-	class AItem* TraceHitItemLastFrame;
+	AItem* TraceHitItemLastFrame;
 
 	/* Currently equipped Weapon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -235,16 +245,18 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	AItem* TraceHitItem;
 
+	/* Distance outward from the camera for the interpolation destintation */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+	float CameraInterpDistance;
+
+	/* Distance upward from the camera for the interpolation destination*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+	float CameraInterpElevation;
+
 public:
 	// Getters for private variables
 	FORCEINLINE bool GetAiming() const { return bAiming; }
 	FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }	
-
-	UFUNCTION(BlueprintCallable)
-	float GetCrosshairSpreadMultipler() const;
-
-	// Adds or subtracts to or from OverlappedItemCount and updates bShouldTraceForItems
-	void IncrementOverlappedItemCount(int8 Amount);
 };
