@@ -67,9 +67,29 @@ protected:
 	UFUNCTION()
 	void AutoFireReset();
 
+	// Line trace for items under the crosshairs 
+	bool TraceUnderCrosshairs(FHitResult& OutHitResult, FVector& OutHitLocation);
+
+	// Trace for items if OverlappedItemCount is greater than zero
+	void TraceForItems();
+
+	// Spawns a default weapon and equips it (when the game starts)
+	class AWeapon* SpawnDefaultWeapon();
+
+	// Takes a weapon and attaches it to the mesh
+	void EquipWeapon(AWeapon* WeaponToEquip);
+
+	// Detach Weapon and let it fall to the ground
+	void DropWeapon();
+
+	void EquipButtonPressed();
+
+	// Drops currently equipped Weapon and Equips TraceHitItem
+	void SwapWeapon(AWeapon* WeapontoSwap);
+
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaTime) override;	
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -193,12 +213,38 @@ private:
 	/* Sets a timer between gunshots */
 	FTimerHandle AutoFireTimer;
 
+	/* True if we should trace every frame for items */
+	bool bShouldTraceForItems;
+
+	/* Number of overlapped items */
+	int8 OverlappedItemCount;
+
+	/* The Item we hit last frame */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+	class AItem* TraceHitItemLastFrame;
+
+	/* Currently equipped Weapon */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
+
+	/* Set this in blueprints for the default Weapon class */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	/* The item currently hit by our trace in TaceForItems (could be null) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	AItem* TraceHitItem;
+
 public:
 	// Getters for private variables
-	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool GetAiming() const { return bAiming; }
+	FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }	
 
 	UFUNCTION(BlueprintCallable)
 	float GetCrosshairSpreadMultipler() const;
+
+	// Adds or subtracts to or from OverlappedItemCount and updates bShouldTraceForItems
+	void IncrementOverlappedItemCount(int8 Amount);
 };
