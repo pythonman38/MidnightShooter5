@@ -54,7 +54,12 @@ AShooterCharacter::AShooterCharacter() :
 	OverlappedItemCount(0),
 	// Camera interp location variables
 	CameraInterpDistance(250.f),
-	CameraInterpElevation(65.f)
+	CameraInterpElevation(65.f),
+	// Starting ammo amounts
+	Starting9mmAmmo(30),
+	StartingAR_Ammo(30),
+	// Combat variables
+	CombatState(ECombatState::ECS_Unoccupied)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -81,6 +86,8 @@ AShooterCharacter::AShooterCharacter() :
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	HandSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("HandSceneComp"));
 }
 
 // Called when the game starts or when spawned
@@ -92,6 +99,8 @@ void AShooterCharacter::BeginPlay()
 	CameraCurrentFOV = CameraDefaultFOV;
 
 	EquipWeapon(SpawnDefaultWeapon());
+
+	InitializeAmmoMap();
 }
 
 void AShooterCharacter::MoveForward(float Value)
@@ -140,12 +149,42 @@ void AShooterCharacter::LookUp(float Value)
 
 void AShooterCharacter::FireWeapon()
 {
-	if (FireSound) UGameplayStatics::PlaySound2D(this, FireSound);
+	if (EquippedWeapon == nullptr) return;
 
-	auto BarrelSocket = GetMesh()->GetSocketByName("BarrelSocket");
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
+
+	if (WeaponHasAmmo())
+	{
+		if (FireSound) UGameplayStatics::PlaySound2D(this, FireSound);
+
+		SendBullet();
+
+		PlayGunFireMontage();
+
+		StartCrosshairBulletFire();
+
+		EquippedWeapon->DecrementAmmo();
+
+		StartFireWeaponTimer();
+	}
+}
+
+void AShooterCharacter::PlayGunFireMontage()
+{
+	auto AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HipFireMontage)
+	{
+		AnimInstance->Montage_Play(HipFireMontage);
+		AnimInstance->Montage_JumpToSection(FName("StartFire"));
+	}
+}
+
+void AShooterCharacter::SendBullet()
+{
+	auto BarrelSocket = EquippedWeapon->GetItemMesh()->GetSocketByName("BarrelSocket");
 	if (BarrelSocket)
 	{
-		const FTransform SocketTransform = BarrelSocket->GetSocketTransform(GetMesh());
+		const FTransform SocketTransform = BarrelSocket->GetSocketTransform(EquippedWeapon->GetItemMesh());
 		if (MuzzleFlash) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlash, SocketTransform);
 
 		FVector BeamEnd;
@@ -153,7 +192,7 @@ void AShooterCharacter::FireWeapon()
 		if (bBeamEnd)
 		{
 			if (ImpactParticles) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, BeamEnd);
-		}		
+		}
 
 		if (BeamParticles)
 		{
@@ -161,16 +200,6 @@ void AShooterCharacter::FireWeapon()
 			if (Beam) Beam->SetVectorParameter(FName("Target"), BeamEnd);
 		}
 	}
-
-	auto AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HipFireMontage)
-	{
-		AnimInstance->Montage_Play(HipFireMontage);
-		AnimInstance->Montage_JumpToSection(FName("StartFire"));
-	}
-
-	// Start bullet fire timer for crosshairs
-	StartCrosshairBulletFire();
 }
 
 bool AShooterCharacter::GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation)
@@ -274,7 +303,11 @@ void AShooterCharacter::DropWeapon()
 
 void AShooterCharacter::EquipButtonPressed()
 {
-	if (TraceHitItem) TraceHitItem->StartItemCurve(this);
+	if (TraceHitItem)
+	{
+		TraceHitItem->StartItemCurve(this);
+		if (TraceHitItem->GetPickupSound()) UGameplayStatics::PlaySound2D(this, TraceHitItem->GetPickupSound());
+	}
 }
 
 void AShooterCharacter::SwapWeapon(AWeapon* WeapontoSwap)
@@ -330,7 +363,7 @@ void AShooterCharacter::FinishCrosshairBulletFire()
 void AShooterCharacter::FireButtonPressed()
 {
 	bFireButtonPressed = true;
-	StartFireWeaponTimer();
+	FireWeapon();
 }
 
 void AShooterCharacter::FireButtonReleased()
@@ -340,18 +373,20 @@ void AShooterCharacter::FireButtonReleased()
 
 void AShooterCharacter::StartFireWeaponTimer()
 {
-	if (bShouldFire)
-	{
-		FireWeapon();
-		bShouldFire = false;
-		GetWorldTimerManager().SetTimer(AutoFireTimer, this, &AShooterCharacter::AutoFireReset, AutomaticFireRate);
-	}
+	CombatState = ECombatState::ECS_FireTimerInProgress;
+
+	GetWorldTimerManager().SetTimer(AutoFireTimer, this, &AShooterCharacter::AutoFireReset, AutomaticFireRate);
 }
 
 void AShooterCharacter::AutoFireReset()
 {
-	bShouldFire = true;
-	if (bFireButtonPressed) StartFireWeaponTimer();
+	CombatState = ECombatState::ECS_Unoccupied;
+
+	if (WeaponHasAmmo())
+	{
+		if (bFireButtonPressed) FireWeapon();
+	}
+	else ReloadWeapon();
 }
 
 bool AShooterCharacter::TraceUnderCrosshairs(FHitResult& OutHitResult, FVector& OutHitLocation)
@@ -403,6 +438,7 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("TakeAim", IE_Pressed, this, &AShooterCharacter::AimingButtonPressed);
 	PlayerInputComponent->BindAction("TakeAim", IE_Released, this, &AShooterCharacter::AimingButtonReleased);
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &AShooterCharacter::EquipButtonPressed);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AShooterCharacter::ReloadButtonPressed);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AShooterCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AShooterCharacter::MoveRight);
@@ -440,7 +476,98 @@ FVector AShooterCharacter::GetCameraInterpLocation()
 
 void AShooterCharacter::GetPickupItem(AItem* Item)
 {
+	if (Item->GetEquipSound()) UGameplayStatics::PlaySound2D(this, Item->GetEquipSound());
+
 	auto Weapon = Cast<AWeapon>(Item);
 	if (Weapon) SwapWeapon(Weapon);
+}
+
+void AShooterCharacter::InitializeAmmoMap()
+{
+	AmmoMap.Add(EAmmoType::EAT_9mm, Starting9mmAmmo);
+	AmmoMap.Add(EAmmoType::EAT_AR, StartingAR_Ammo);
+}
+
+bool AShooterCharacter::WeaponHasAmmo()
+{
+	if (EquippedWeapon == nullptr) return false;
+	
+	return EquippedWeapon->GetAmmo() > 0;
+}
+
+void AShooterCharacter::ReloadButtonPressed()
+{
+	ReloadWeapon();
+}
+
+void AShooterCharacter::ReloadWeapon()
+{
+	if (CombatState != ECombatState::ECS_Unoccupied) return;
+
+	if (EquippedWeapon == nullptr) return;
+
+	if (CarryingAmmo())
+	{
+		CombatState = ECombatState::ECS_Reloading;
+
+		auto AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && ReloadMontage)
+		{
+			AnimInstance->Montage_Play(ReloadMontage);
+			AnimInstance->Montage_JumpToSection(EquippedWeapon->GetReloadMontageSection());
+		}
+	}
+}
+
+void AShooterCharacter::FinishReloading()
+{
+	CombatState = ECombatState::ECS_Unoccupied;
+
+	if (EquippedWeapon == nullptr) return;
+
+	const auto AmmoType{ EquippedWeapon->GetAmmoType() };
+	if (AmmoMap.Contains(AmmoType))
+	{
+		int32 CarriedAmmo = AmmoMap[AmmoType];
+		const int32 MagEmptySpace = EquippedWeapon->GetMagazineCapacity() - EquippedWeapon->GetAmmo();
+		if (MagEmptySpace > CarriedAmmo)
+		{
+			EquippedWeapon->ReloadAmmo(CarriedAmmo);
+			CarriedAmmo = 0;
+		}
+		else
+		{
+			EquippedWeapon->ReloadAmmo(MagEmptySpace);
+			CarriedAmmo -= MagEmptySpace;
+		}
+		AmmoMap.Add(AmmoType, CarriedAmmo);
+	}
+}
+
+bool AShooterCharacter::CarryingAmmo()
+{
+	if (EquippedWeapon == nullptr) return false;
+
+	auto AmmoType = EquippedWeapon->GetAmmoType();
+	if (AmmoMap.Contains(AmmoType)) return AmmoMap[AmmoType] > 0;
+
+	return false;
+}
+
+void AShooterCharacter::GrabClip()
+{
+	if (EquippedWeapon == nullptr || HandSceneComponent == nullptr) return;
+
+	int32 ClipBoneIndex{ EquippedWeapon->GetItemMesh()->GetBoneIndex(EquippedWeapon->GetClipBoneName()) };
+	ClipTransform = EquippedWeapon->GetItemMesh()->GetBoneTransform(ClipBoneIndex);
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepRelative, true);
+	HandSceneComponent->AttachToComponent(GetMesh(), AttachmentRules, FName(TEXT("hand_l")));
+	HandSceneComponent->SetWorldTransform(ClipTransform);
+	EquippedWeapon->SetMovingClip(true);
+}
+
+void AShooterCharacter::ReleaseClip()
+{
+	EquippedWeapon->SetMovingClip(false);
 }
 
