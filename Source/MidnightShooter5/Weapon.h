@@ -41,6 +41,8 @@ public:
 
 	void ReloadAmmo(int32 Amount);
 
+	bool ClipIsFull();
+
 private:
 	FTimerHandle ThrowWeaponTimer;
 	float ThrowWeaponTime;
