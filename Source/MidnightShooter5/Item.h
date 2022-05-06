@@ -28,6 +28,14 @@ enum class EItemState : uint8
 	EIS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	EIT_Ammo UMETA(DisplayName = "Ammo"),
+	EIT_Weapon UMETA(DisplayName = "Weapon"),
+	EIT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class MIDNIGHTSHOOTER5_API AItem : public AActor
 {
@@ -51,13 +59,18 @@ protected:
 	void SetActiveStars();
 
 	// Sets properties of the Item's components based on State
-	void SetItemProperties(EItemState State);
+	virtual void SetItemProperties(EItemState State);
 
 	// Called when ItemInterpTimer is finished
 	void FinishInterping();
 
 	// Handles item interpolation when in the EquipInterping state
 	void ItemInterp(float DeltaTime);
+
+	// Get interp location based on the Item type
+	FVector GetInterpLocation();
+
+	void PlayPickupSound();
 
 public:	
 	// Called every frame
@@ -67,6 +80,8 @@ public:
 
 	// Called from the AShooterCharacter class 
 	void StartItemCurve(class AShooterCharacter* Char);
+
+	void PlayEquipSound();
 
 private:
 	/* Skeletal mesh for the Item */
@@ -149,10 +164,19 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	USoundCue* EquipSound;
 
+	/* Enum for the type of Item this Item is */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	EItemType ItemType;
+
+	/* Index of the interp location this item is interping to */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	int32 InterpLocIndex;
+
 public:
 
 	// Getters for private variables
 	FORCEINLINE EItemState GetItemState() const { return ItemState; }
+	FORCEINLINE int32 GetAmmoAmount() const { return AmmoAmount; }
 	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }
 	FORCEINLINE USkeletalMeshComponent* GetItemMesh() const { return ItemMesh; }
 	FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
