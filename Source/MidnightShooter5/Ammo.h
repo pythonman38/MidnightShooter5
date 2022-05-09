@@ -30,6 +30,10 @@ public:
 
 	virtual void SetItemProperties(EItemState State) override;
 
+	virtual void EnableCustomDepth() override;
+
+	virtual void DisableCustomDepth() override;
+
 private:
 	/* Mesh for the Ammo pickup */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Ammo, meta = (AllowPrivateAccess = "true"))

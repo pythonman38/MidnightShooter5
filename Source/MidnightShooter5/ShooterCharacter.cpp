@@ -137,6 +137,8 @@ void AShooterCharacter::BeginPlay()
 	CameraCurrentFOV = CameraDefaultFOV;
 
 	EquipWeapon(SpawnDefaultWeapon());
+	EquippedWeapon->DisableCustomDepth();
+	EquippedWeapon->DisableGlowMaterial();
 
 	InitializeAmmoMap();
 	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
@@ -306,17 +308,29 @@ void AShooterCharacter::TraceForItems()
 		if (ItemTraceResult.bBlockingHit)
 		{
 			TraceHitItem = Cast<AItem>(ItemTraceResult.GetActor());
-			if (TraceHitItem && TraceHitItem->GetPickupWidget()) TraceHitItem->GetPickupWidget()->SetVisibility(true);
+			if (TraceHitItem && TraceHitItem->GetPickupWidget())
+			{
+				TraceHitItem->GetPickupWidget()->SetVisibility(true);
+				TraceHitItem->EnableCustomDepth();
+			}
 
 			if (TraceHitItemLastFrame)
 			{
-				if (TraceHitItem != TraceHitItemLastFrame) TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+				if (TraceHitItem != TraceHitItemLastFrame)
+				{
+					TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+					TraceHitItemLastFrame->DisableCustomDepth();
+				}
 			}
 
 			TraceHitItemLastFrame = TraceHitItem;
 		}
 	}
-	else if (TraceHitItemLastFrame) TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+	else if (TraceHitItemLastFrame)
+	{
+		TraceHitItemLastFrame->GetPickupWidget()->SetVisibility(false);
+		TraceHitItemLastFrame->DisableCustomDepth();
+	}
 }
 
 AWeapon* AShooterCharacter::SpawnDefaultWeapon()
