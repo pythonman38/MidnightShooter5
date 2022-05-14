@@ -13,6 +13,7 @@ enum class ECombatState : uint8
 	ECS_Unoccupied UMETA(DisplayName = "Unoccupied"),
 	ECS_FireTimerInProgress UMETA(DisplayName = "FireTimerInProgress"),
 	ECS_Reloading UMETA(DisplayName = "Reloading"),
+	ECS_Equipping UMETA(DisplayName = "Equipping"),
 	ECS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -29,6 +30,9 @@ struct FInterpLocation
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 ItemCount;
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEquipItemDelegate, int32, CurrentSlotIndex, int32, NewSlotIndex);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FHighlightIconDelegate, int32, SlotIndex, bool, bStartAnimation);
 
 UCLASS()
 class MIDNIGHTSHOOTER5_API AShooterCharacter : public ACharacter
@@ -105,7 +109,7 @@ protected:
 	class AWeapon* SpawnDefaultWeapon();
 
 	// Takes a weapon and attaches it to the mesh
-	void EquipWeapon(AWeapon* WeaponToEquip);
+	void EquipWeapon(AWeapon* WeaponToEquip, bool bSwapping = false);
 
 	// Detach Weapon and let it fall to the ground
 	void DropWeapon();
@@ -159,6 +163,27 @@ protected:
 
 	void ResetEquipSoundTimer();
 
+	UFUNCTION(BlueprintCallable)
+	float GetCrosshairSpreadMultipler() const;
+
+	void FKeyPressed();
+	void OneKeyPressed();
+	void TwoKeyPressed();
+	void ThreeKeyPressed();
+	void FourKeyPressed();
+	void FiveKeyPressed();
+
+	void ExchangeInventoryItems(int32 CurrentItemIndex, int32 NewItemIndex);
+
+	void ExchangeBySlotIndexNumber(int32 IndexNumber);
+
+	UFUNCTION(BlueprintCallable)
+	void FinishEquipping();
+
+	int32 GetEmptyInventorySlot();
+
+	void HighlightInventorySlot();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;	
@@ -168,24 +193,22 @@ public:
 
 	virtual void Jump() override;
 
-	UFUNCTION(BlueprintCallable)
-	float GetCrosshairSpreadMultipler() const;
-
 	// Adds or subtracts to or from OverlappedItemCount and updates bShouldTraceForItems
 	void IncrementOverlappedItemCount(int8 Amount);
 
-	void GetPickupItem(class AItem* Item);
+	void IncrementInterpLocItemCount(int32 Index, int32 Amount);
 
-	FInterpLocation GetInterpLocation(int32 Index);
+	void GetPickupItem(class AItem* Item);
 
 	// Returns the index in InterpLocations array with the lowest ItemCount
 	int32 GetInterpLocationIndex();
 
-	void IncrementInterpLocItemCount(int32 Index, int32 Amount);
-
 	void StartPickupSoundTimer();
-
 	void StartEquipSoundTimer();
+
+	FInterpLocation GetInterpLocation(int32 Index);
+
+	void UnhighlightInventorySlot();
 
 private:
 	/* Camra boom positioning the camera behind the character */
@@ -429,6 +452,27 @@ private:
 
 	/* Time to wait before we can play another pickup or equip sound */
 	float PickupSoundResetTime, EquipSoundResetTime;
+
+	/* Array of AItems for the Inventory */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	TArray<AItem*> Inventory;
+
+	const int32 INVENTORY_CAPACITY{ 6 };
+
+	/* Delegate for sending slot information to Inventory bar when equipping */
+	UPROPERTY(BlueprintAssignable, Category = Delegate, meta = (AllowPrivateAccess = "true"))
+	FEquipItemDelegate EquipItemDelegate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* EquipMontage;
+
+	/* Delegate for sending slot information for playing the icon animation */
+	UPROPERTY(BlueprintAssignable, Category = Delegate, meta = (AllowPrivateAccess = "true"))
+	FHighlightIconDelegate HighlightIconDelegate;
+
+	/* The index for the currently highlighted slot */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	int32 HighlightedSlot;
 
 public:
 	// Getters for private variables

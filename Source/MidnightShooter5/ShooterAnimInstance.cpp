@@ -23,7 +23,8 @@ UShooterAnimInstance::UShooterAnimInstance() :
 	bReloading(false),
 	OffsetState(EOffsetState::EOS_Hip),
 	RecoilWeight(1.0f),
-	bTurningInPlace(false)
+	bTurningInPlace(false),
+	bEquipping(false)
 {
 }
 
@@ -52,6 +53,9 @@ void UShooterAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 		// Is the character crouching?
 		bCrouching = ShooterCharacter->GetCrouching();
+
+		// Is the character equipping a weapon?
+		bEquipping = ShooterCharacter->GetCombatState() == ECombatState::ECS_Equipping;
 		
 		FRotator AimRotation = ShooterCharacter->GetBaseAimRotation(), MovementRotation = UKismetMathLibrary::MakeRotFromX(ShooterCharacter->GetVelocity());
 		MovementOffsetYaw = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation).Yaw;
@@ -114,16 +118,16 @@ void UShooterAnimInstance::TurnInPlace()
 		else bTurningInPlace = false;
 	}
 
-	if (bTurningInPlace) bReloading ? RecoilWeight = 1.f : RecoilWeight = 0.f;
+	if (bTurningInPlace) (bReloading || bEquipping) ? RecoilWeight = 1.f : RecoilWeight = 0.f;
 	else
 	{
 		if (bCrouching)
 		{
-			bReloading ? RecoilWeight = 1.f : RecoilWeight = 0.1f;
+			(bReloading || bEquipping) ? RecoilWeight = 1.f : RecoilWeight = 0.1f;
 		}
 		else
 		{
-			(bAiming || bReloading) ? RecoilWeight = 1.f : RecoilWeight = 0.5f;
+			(bAiming || bReloading || bEquipping) ? RecoilWeight = 1.f : RecoilWeight = 0.5f;
 		}
 	}
 }

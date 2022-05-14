@@ -117,4 +117,8 @@ private:
 	/* True when the Character is turning in place */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
 	bool bTurningInPlace;
+
+	/* True when equipping a weapon from the inventory */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = COmbat, meta = (AllowPrivateAccess = "true"))
+	bool bEquipping;
 };
