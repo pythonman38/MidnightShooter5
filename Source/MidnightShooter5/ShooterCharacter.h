@@ -259,14 +259,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
 	float MouseAimingLookUpRate;
 
-	/* Randomized gun shot sound made when the weapon is fired */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	class USoundCue* FireSound;
-
-	/* Flash spawned at BarrelSocket*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystem* MuzzleFlash;
-
 	/* Montage for firing the weapon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	class UAnimMontage* HipFireMontage;
@@ -287,6 +279,7 @@ private:
 	float CameraDefaultFOV;
 
 	/* Camera field of view when zoomed in (aiming) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	float CameraZoomedFOV;
 
 	/* Current field of view this frame */
@@ -322,9 +315,6 @@ private:
 	FTimerHandle CrosshairShooterTimer;
 
 	bool bFireButtonPressed, bShouldFire;
-
-	/* Rate of automatic gun fire */
-	float AutomaticFireRate;
 
 	/* Sets a timer between gunshots */
 	FTimerHandle AutoFireTimer;
@@ -476,6 +466,7 @@ private:
 
 public:
 	// Getters for private variables
+	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 	FORCEINLINE bool GetCrouching() const { return bCrouching; }
 	FORCEINLINE bool GetAiming() const { return bAiming; }
 	FORCEINLINE bool ShouldPlayEquipSound() const { return bShouldPlayEquipSound; }

@@ -366,8 +366,10 @@ void AItem::InitializeCustomDepth()
 
 void AItem::OnConstruction(const FTransform& Transform)
 {
+	Super::OnConstruction(Transform);
+
 	// Load the data in the Item Rarity Data Table
-	FString RarityTablePath(TEXT("DataTable'/Game/_Game/DataTable/ItemRarityDataTable.ItemRarityDataTable'"));
+	FString RarityTablePath(TEXT("DataTable'/Game/_Game/DataTables/ItemRarityDataTable.ItemRarityDataTable'"));
 	UDataTable* RarityTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *RarityTablePath));
 	if (RarityTableObject)
 	{
@@ -402,7 +404,7 @@ void AItem::OnConstruction(const FTransform& Transform)
 		}
 	}
 
-	if (DynamicMaterialInstance)
+	if (MaterialInstance)
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(MaterialInstance, this);
 		DynamicMaterialInstance->SetVectorParameterValue(TEXT("FresnelColor"), GlowColor);
