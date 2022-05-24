@@ -184,6 +184,9 @@ protected:
 
 	void HighlightInventorySlot();
 
+	UFUNCTION(BlueprintCallable)
+	UPARAM(DisplayName = "Physical Surface") EPhysicalSurface GetSurfaceType();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;	
