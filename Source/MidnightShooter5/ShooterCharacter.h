@@ -72,7 +72,7 @@ protected:
 
 	void SendBullet();
 
-	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation);
+	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
 
 	// Set bAiming to true or false with button pressed or released
 	void AimingButtonPressed();

@@ -82,6 +82,12 @@ struct FWeaponDataTable : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutomatic;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float HeadShotDamage;
 };
 
 /**
@@ -91,7 +97,7 @@ UCLASS()
 class MIDNIGHTSHOOTER5_API AWeapon : public AItem
 {
 	GENERATED_BODY()
-	
+
 public:
 	// Sets default values for the weapon's properties
 	AWeapon();
@@ -191,7 +197,7 @@ private:
 	/* Name of the bone to hide on the weapon mesh */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Data Table", meta = (AllowPrivateAccess = "true"))
 	FName BoneToHide;
-	
+
 	/* Amount that the slide is pushed back during pistol fire */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Pistol, meta = (AllowPrivateAccess = "true"))
 	float SlideDisplacement;
@@ -218,12 +224,22 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
 	bool bAutoMatic;
 
+	/* Amount of damage caused by a bullet */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	float Damage;
+
+	/* Amount of damage when a bullet hits the head of the Enemy */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	float HeadShotDamage;
+
 public:
 	// Getters for private variables
 	FORCEINLINE bool GetAutoMatic() const { return bAutoMatic; }
 	FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE float GetAutoFireRate() const { return AutoFireRate; }
+	FORCEINLINE float GetDamage() const { return Damage; }
+	FORCEINLINE float GetHeadShotDamage() const { return HeadShotDamage; }
 	FORCEINLINE FName GetClipBoneName() const { return ClipBoneName; }
 	FORCEINLINE FName GetReloadMontageSection() const { return ReloadMontageSection; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
