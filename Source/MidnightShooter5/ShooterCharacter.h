@@ -517,13 +517,18 @@ public:
 	FORCEINLINE bool GetAiming() const { return bAiming; }
 	FORCEINLINE bool ShouldPlayEquipSound() const { return bShouldPlayEquipSound; }
 	FORCEINLINE bool ShouldPlayPickupSound() const { return bShouldPlayPickupSound; }
+	FORCEINLINE float GetHealth() const { return Health; }
+	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE float GetStunChance() const { return StunChance; }
 	FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE UParticleSystem* GetBloodParticles() const { return BloodParticles; }
 	FORCEINLINE USoundCue* GetMeleeImpactSound() const { return MeleeImpactSound; }
-	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }	
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	// Setters for private variables
+	FORCEINLINE void SetHealth(float HealthAmount) { Health = HealthAmount; }
 };
 
 

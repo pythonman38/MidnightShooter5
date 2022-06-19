@@ -252,7 +252,7 @@ void AShooterCharacter::SendBullet()
 			if (BeamHitResult.GetActor())
 			{
 				IBulletHitInterface* BulletHitInterface = Cast<IBulletHitInterface>(BeamHitResult.GetActor());
-				if (BulletHitInterface) BulletHitInterface->BulletHit_Implementation(BeamHitResult);
+				if (BulletHitInterface) BulletHitInterface->BulletHit_Implementation(BeamHitResult, this, GetController());
 				else if (ImpactParticles) UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, BeamHitResult.Location);
 
 				AEnemy* HitEnemy = Cast<AEnemy>(BeamHitResult.GetActor());
